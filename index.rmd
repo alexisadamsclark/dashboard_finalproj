@@ -1,0 +1,475 @@
+---
+title: "R Final Project Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(rio)
+library(tidyverse)
+library(car)
+library(waffle)
+library(extrafont)
+library(emojifont)
+library(colorblindr)
+library(ggpubr)
+library(cowplot)
+library(scales)
+
+knitr::opts_chunk$set(fig.width=12, fig.height=9, fig.align = "center", message = FALSE, error = FALSE, warning = FALSE)
+theme_set(theme_minimal(base_size = 15))
+options(scipen=999)
+
+data <- Salaries
+data$sex <- factor(data$sex, levels = c("Male", "Female"))
+```
+
+# Viz #1
+
+The goal of these graph was to display how many professors there are at University X by gender and how much they are each paid on average. These plots provide an idea of basic average salaries and spread. 
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Final Option
+
+```{r, echo = FALSE, fig.width = 8, fig.height = 6}
+data1 <- data %>% 
+  group_by(sex) %>% 
+  summarize(mean = mean(salary))
+
+plot1e <- ggplot(data, aes(x = sex, y = salary, color = sex)) + 
+  geom_jitter(width = 0.25, alpha = 0.5, size = 3) + 
+  theme(legend.position="none",
+         plot.title = element_text(face = "bold", hjust = 0.5),
+         plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  geom_segment(data = filter(data1, sex == "Male"), aes(x = 0.75, xend = 1.25, y = mean, yend = mean), linetype = "dashed", size = 1, color = "black") + 
+  geom_segment(data = filter(data1, sex == "Female"), aes(x = 1.75, xend = 2.25, y = mean, yend = mean), linetype = "dashed", size = 1, color = "black") + 
+  annotate("text", label = "Average: $115,090", x = 1, y = 250000, color = "#E69F00", face = "bold", size = 5) +
+  annotate("text", label = "Average: $101,002", x = 2, y = 250000, color = "#56B4E9", face = "bold", size = 5) + 
+  scale_color_OkabeIto() + 
+  labs(title = "The Gender Gap in Academia:", 
+       subtitle = "Faculty Salaries by Gender at University X \n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf",
+       x = " ", 
+       y = " ") +
+  scale_y_continuous(labels=scales::dollar, limits = c(0, 250000))
+plot1e
+```
+
+> I really like this jitter plot because it allows me to show the raw data points, while also providing annotations that allow me to communicate the main point of the graph (average salaries are lower for women) that is understandable by a public audience. I also added the caption including the data source. 
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Earlier Option 1
+
+```{r, echo = FALSE, fig.width=5, fig.height=3}
+theme_set(theme_minimal(base_size = 10))
+plot1c <- ggplot(data, aes(x = sex, y = salary, fill = sex)) + 
+  geom_boxplot(alpha = 0.7) + 
+  labs(title = "The Gender Gap in Academia:", 
+       subtitle = "The Distribution of Faculty Salaries by Gender at University X \n",
+       y = " ", 
+       x = " ") + 
+  theme(legend.position="none",
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_fill_OkabeIto() + 
+  scale_y_continuous(labels=scales::dollar)
+plot1c
+```
+
+> This is the first boxplot that I started out with. I like that this shows the mean and spread of the distributions, but I don't like that you can't see the actual data points and that you can't really get a sense of the discrepancy in the number of female and male professors. Boxplots are also less understandable by the public.
+
+### Earlier Option 2
+
+```{r, echo = FALSE, fig.width=5, fig.height=3}
+theme_set(theme_minimal(base_size = 10))
+plot1d <- ggplot(data, aes(x = sex, y = salary)) + 
+  geom_boxplot() +
+  geom_jitter(width = 0.25, size = 1, alpha = 0.3, aes(color = sex)) +
+  labs(title = "The Gender Gap in Academia:", 
+       subtitle = "The Distribution of Faculty Salaries by Gender at University X \n",
+       y = " ", 
+       x = " ") + 
+  theme(legend.position="none",
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_color_OkabeIto() + 
+  scale_y_continuous(labels=scales::dollar)
+plot1d
+```
+
+> I like this boxplot better because I can see the raw data points. I overlayed the actual datapoints with the boxplot, but it is still not really appropriate for a public audience.
+
+
+# Viz #2
+
+This is essentially a continuation of Viz #2, but using histograms. The goal of these plots is to show the spread faculty salaries by gender. 
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Final Option
+
+```{r histogram 1, echo = FALSE, fig.width = 8, fig.height = 6}
+theme_set(theme_minimal(base_size = 15))
+
+plot1b <- ggplot(data, aes(salary)) +
+  geom_histogram(aes(fill = sex), alpha = 0.6) + 
+  labs(title = "The Gender Gap in Academia:", 
+       subtitle = "The Distribution of Faculty Salaries by Gender at University X \n", 
+       x = " ",
+       y = "Number of Professors \n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5),
+        legend.position="none") + 
+  scale_fill_OkabeIto() + 
+  scale_color_OkabeIto() + 
+  geom_vline(data = data1, aes(xintercept = mean, color = sex), size = 2) +
+  scale_x_continuous(labels=scales::dollar) + 
+  annotate("text", label = "Men's Average Salary: $115,090", x = 175000, y = 35, color = "#E69F00", face = "bold", size = 5) +
+  annotate("text", label = "Women's Average Salary: $101,002", x = 175000, y = 32, color = "#56B4E9", face = "bold", size = 5)
+plot1b
+```
+
+> I like this version histogram the best because it is more concise and easy to see the distributions, even though they are on top of each other, allowing the space for annotations. This one might be better for a public audience, as well, as means are clearly denoted. 
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Earlier Option 1
+
+```{r histogram 2, echo = FALSE, fig.width=5, fig.height=3}
+theme_set(theme_minimal(base_size = 10))
+plot1a_1 <- ggplot(data, aes(salary)) +
+  geom_histogram(alpha = 0.7, color= "white")+ 
+  labs(title = "The Distribution of Faculty Salaries at University X", 
+       subtitle = "Not Separated by Gender", 
+       x = " ",
+       y = "Number of Professors \n") + 
+  theme(legend.position="none", 
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_fill_OkabeIto()+ 
+  scale_x_continuous(labels=scales::dollar)
+plot1a_1
+
+```
+
+
+
+### Earlier Option 2
+
+```{r histogram 3, echo = FALSE, fig.width=5, fig.height=3}
+theme_set(theme_minimal(base_size = 10))
+plot1a <- ggplot(data, aes(salary)) +
+  geom_histogram(aes(fill = sex), alpha = 0.7, color= "white") +
+  facet_wrap(~sex) + 
+  labs(title = "The Gender Gap in Academia:", 
+       subtitle = "The Distribution of Faculty Salaries by Gender at University X \n", 
+       x = " ",
+       y = "Number of Professors \n") + 
+  theme(legend.position="none", 
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_fill_OkabeIto()+ 
+  scale_x_continuous(labels=scales::dollar)
+plot1a
+```
+
+> I like this histogram because it gives you a sense of numbers (there are not enough female professors), and also a sense of how much less they are paid, but it's probably not for a public audience.
+
+
+
+# Viz #3
+
+The goal of this series of plots is to show how many female and male professors there at University X, by rank.
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+### Final Option
+
+```{r waffle 1, echo = FALSE, fig.width = 8, fig.height = 6}
+theme_set(theme_minimal(base_size = 15))
+data2 <- data
+data2$sex <- factor(data2$sex, levels = c("Female", "Male"))
+
+data_summary2 <- data2 %>% 
+  group_by(sex, rank) %>% 
+  summarize(n = n())
+
+partsf <- c("Assistant Professor" = 11, "Associate Professor" = 10, "Full Professor" = 18)
+plot2cw <- waffle(partsf, 
+       rows = 2, 
+       title = "\n",
+       size = 3,
+       colors = c("#E69F00", "#56B4E9", "#009E73"))
+
+partsm <- c("Assistant Professor" = 56, "Associate Professor" = 54, "Full Professor" = 247)
+plot2cm <- waffle(partsm, 
+       rows = 17, 
+       title = " ", 
+       size = 3,
+       colors = c("#E69F00", "#56B4E9", "#009E73"))
+
+figure <- ggarrange(plot2cm, plot2cw, 
+                    labels = c("Male Professors", "Female Professors"),
+                    common.legend = TRUE, legend = "bottom",
+                    ncol = 2, nrow = 1,
+                    font.label = list(size = 15, color = "Black"))
+figure
+
+```
+
+> I like this Waffle plot the best just because it's the most visually appealing, and I feel like a public audience and the scientific community could understand! The next step would be to try to use glyphs, but there's something wrong with the fonts on my computer that I can't quite figure out. Also, I am a bit reluctant to use stereotypical images/graphics representing men and women- something to think about for the future!
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Earlier Option 1
+
+```{r waffle 2, echo = FALSE, fig.width = 5, fig.height = 3}
+theme_set(theme_minimal(base_size = 7))
+plot2a <- ggplot(data, aes(x = sex, fill = rank)) + 
+  geom_bar(alpha = 0.7) + 
+  scale_fill_OkabeIto(name="Rank",
+                       labels=c("Assistant Professor", "Associate Professor", "Full Professor")) + 
+  labs(title = "University X Doesn't Hire Enough Female Professors", 
+       subtitle = "And has a disproportionate number of men in the most powerful positions...\n", 
+       y = "Number of Professors \n", 
+       x = " ") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5))
+plot2a
+```
+
+> This is just a simple stacked bar graph, but as we talked about in class, these kind of stink because they are hard to compare across groups. 
+
+### Earlier Option 2
+
+```{r waffle 3, echo = FALSE, fig.width = 5, fig.height = 3}
+theme_set(theme_minimal(base_size = 7))
+data2 <- data
+data2$sex <- factor(data2$sex, levels = c("Female", "Male"))
+
+plot2b <- ggplot(data2, aes(x = sex, fill = rank)) + 
+  geom_bar(position = "dodge", alpha = 0.7) + 
+  scale_fill_OkabeIto(name="Rank",
+                      labels=c("Assistant Professor", "Associate Professor", "Full Professor")) + 
+  coord_flip() + 
+  labs(title = "University X Doesn't Hire Enough Female Professors", 
+       subtitle = "And has a disproportionate number of men in the most powerful positions...\n", 
+       y = "\n Number of Professors", 
+       x = " ") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5))
+plot2b
+```
+
+> The dodged bar graph with coord flip allows for easier comparisons, but it's not totally special looking, which brought me to the Waffle plot!
+
+# Viz #4
+
+The goal of this series of visualizations is to display the discrepancy in salaries between men and women at different professor ranks (assistant professor, associate professor, and full professor)
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+### Final Option
+
+```{r plot4_1, echo = FALSE, fig.width = 8, fig.height = 6}
+theme_set(theme_minimal(base_size = 13))
+data3 <- data
+data3 <- data3 %>% 
+  mutate(discipline = fct_recode(discipline, 
+                                 "Theoretical" = "A",
+                                 "Applied" = "B"))
+
+data3 <- data3 %>% 
+  mutate(rank = fct_recode(rank,
+                           "Assistant Professor" = "AsstProf", 
+                           "Associate Professor" = "AssocProf", 
+                           "Full Professor" = "Prof"))
+plot3c <- data3 %>% 
+  group_by(sex, rank, discipline) %>% 
+  summarize(mean = mean(salary)) %>% 
+  spread(sex, mean) %>% 
+  mutate(prop = (1 - ((Male - Female)/Male)),
+         prop = as.numeric(prop)) %>% 
+  select(rank, discipline, prop) %>% 
+  ggplot(aes(x = rank, y = prop, fill = rank)) + 
+  geom_col(alpha = 0.8) + 
+  geom_segment(aes(x = 0, xend = 4, y = 1, yend = 1), linetype = "dashed", size = 1, color = "black") + 
+  labs(title = "Large Pay Gap in Theoretical Departments at University X", 
+       subtitle = "Women's Pay Expressed as Percentage of Men's Pay\n", 
+       y = "\n Percent of Men's Pay \n", 
+       x = " ",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  theme(legend.position="none",
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_fill_OkabeIto() + 
+  facet_grid(discipline~.) +
+  scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1.0),
+                     labels = c("25%", "50%", "75%", "100%"),
+                     limits = c(0, 1.25)) +
+  coord_flip()
+ann_text<-data.frame(rank=c("Assistant Professor","Associate Professor","Full Professor","Assistant Professor","Associate Professor","Full Professor"),
+                     prop=c(1.10,1.10,1.10,1.10,1.10,1.10), discipline=c("Theoretical","Theoretical","Theoretical","Applied","Applied","Applied"),
+                     label=c("98.2%","84.8%", "90.8%", "99.4%", "97.8%", "98.7%"))
+plot3c + geom_text(data = ann_text,label=ann_text$label, size = 5)
+
+```
+
+> This is a little bit different take on the same idea, and also adds a different element. It looks at the proportion of men's salaries that the women's salaries represent in the different professor ranks, but ALSO adds another piece of information- the discipline that they are working in (either theoretical or applied). Thus, this graph highlights that the problem is really in the theoretical disciplines. I also like that the data is represented as a proportion, and I liked to play around with the annotations and geom_segment.
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+### Earlier Option 1
+
+```{r plot4_2, echo = FALSE, fig.width = 4, fig.height = 3}
+theme_set(theme_minimal(base_size = 7))
+plot3a <- data3 %>% 
+  group_by(sex, rank) %>% 
+  summarize(mean = mean(salary), 
+            salary_se = sqrt(var(salary, na.rm = TRUE) / length(salary))) %>% 
+  ggplot(aes(x = sex, y = mean, fill = sex)) + 
+  geom_col(alpha = 0.8) + 
+  geom_errorbar(aes(ymin = (mean - 1.96*salary_se), ymax = (mean + 1.96*salary_se)), 
+                color = "gray40",
+                width = 0.2,
+                size = 0.5) +
+  facet_wrap(~rank) + 
+  labs(title = "University X Pays Female Professors Less At Every Level", 
+       subtitle = "Mean Salary by Faculty Rank and Gender\n", 
+       y = " ", 
+       x = " ") + 
+  theme(legend.position="none",
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_fill_OkabeIto() + 
+  scale_y_continuous(labels=dollar, limits = c(0,140000))
+plot3a
+```
+
+> I started with the most traditional way of representing this kind of data - a bar graph. However, apparantly dynamite plots are bad.....! In addition to often misrepresenting data, this type of bar graph with error bars is mostly used only for a scientific audience. 
+
+
+### Earlier Option 2
+
+```{r plot4_3, echo = FALSE, fig.width = 4, fig.height = 3}
+theme_set(theme_minimal(base_size = 7))
+plot3b <- data3 %>% 
+  group_by(sex, rank) %>% 
+  summarize(mean = mean(salary),
+            salary_se = sqrt(var(salary, na.rm = TRUE) / length(salary))) %>% 
+  ggplot(aes(x = sex, y = mean, color = sex)) + 
+  geom_point(size = 2) + 
+  geom_errorbar(aes(ymin = (mean - 1.96*salary_se), ymax = (mean + 1.96*salary_se)), 
+                color = "gray40",
+                width = 0.2,
+                size = 0.5) + 
+  facet_wrap(~rank) + 
+  labs(title = "University X Pays Female Professors Less At Every Level", 
+       subtitle = "Mean Salary by Faculty Rank and Gender\n", 
+       y = "\n", 
+       x = " ") + 
+  theme(legend.position="none",
+        plot.title = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(face = "bold", hjust = 0.5)) + 
+  scale_color_OkabeIto() + 
+  scale_y_continuous(labels=dollar, limits = c(0,140000))
+plot3b
+```
+
+> This is a similar type of plot as the prior bar graph, but uses dots instead, circumventing the issue with the dynamite plot. However, it still isn't that exciting, and I would like a plot that is understandable to both scholarly and lay audiences.
+
+# Viz #5 - Bonus!
+
+The goal of this series of plots is to display the salary of men and women by years of service and years since phd, separated out by department. These plots are mainly for a scholarly audience who would understand regression.
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### Bonus Plot 1
+
+```{r plot5_1, echo = FALSE, fig.width = 5, fig.height = 4}
+theme_set(theme_minimal(base_size = 8))
+plot4a <- ggplot(data3, aes(x = yrs.service, y = salary, color = sex)) + 
+  geom_point(alpha = 0.3) + 
+  geom_smooth(method = "lm", se = FALSE, size = 1.5) + 
+  labs(title = "Salary at University X As a Function of Years of Service", 
+       subtitle = "Displayed Separately for Theoretical and Applied Departments", 
+       y = "\n", 
+       x = "\nYears of Service\n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  scale_color_OkabeIto(name = "Gender") + 
+  facet_wrap(~discipline) + 
+  scale_y_continuous(labels=dollar, limits = c(0, 250000))
+plot4a
+```
+
+> This is my favorite type of regression/scattorplot because I can see the raw data over the regression line.
+
+### Bonus Plot 2
+
+```{r plot5_2, echo = FALSE, fig.width = 5, fig.height = 4}
+theme_set(theme_minimal(base_size = 8))
+plot4a <- ggplot(data3, aes(x = yrs.service, y = salary, color = sex)) + 
+  geom_smooth(method = "lm", se = TRUE, size = 1.5) + 
+  labs(title = "Salary at University X As a Function of Years of Service", 
+       subtitle = "Displayed Separately for Theoretical and Applied Departments", 
+       y = "\n", 
+       x = "\nYears of Service\n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  scale_color_OkabeIto(name = "Gender") + 
+  facet_wrap(~discipline) + 
+  scale_y_continuous(labels=dollar, limits = c(0, 250000))
+plot4a
+```
+
+> This is my variation of Plot 1, but I don't like it as much because really only scholarly audiences know what the se ribbon represent. I love data points!! 
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### Bonus Plot 3
+
+```{r plot5_3, echo = FALSE, fig.width = 5, fig.height = 4}
+theme_set(theme_minimal(base_size = 8))
+plot4b <- ggplot(data3, aes(x = yrs.since.phd, y = salary, color = sex)) + 
+  geom_point(alpha = 0.3) + 
+  geom_smooth(method = "lm", se = FALSE, size = 1.5) + 
+  facet_wrap(~discipline) + 
+  labs(title = "Salary at University X As a Function of Years Since Ph.D.", 
+       subtitle = "Displayed Separately for Theoretical and Applied Departments", 
+       y = "\n", 
+       x = "\nYears Since Ph.D.\n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  scale_color_OkabeIto(name = "Gender") + 
+  scale_y_continuous(labels=dollar, limits = c(0, 250000))
+plot4b
+```
+
+> Another regression/scattorplot with the raw data points over it.
+
+### Bonus Plot 4
+
+```{r plot5_4, echo = FALSE, fig.width = 5, fig.height = 4}
+theme_set(theme_minimal(base_size = 8))
+plot4b <- ggplot(data3, aes(x = yrs.since.phd, y = salary, color = sex)) + 
+  geom_smooth(method = "lm", se = TRUE, size = 1.5) + 
+  facet_wrap(~discipline) + 
+  labs(title = "Salary at University X As a Function of Years Since Ph.D.", 
+       subtitle = "Displayed Separately for Theoretical and Applied Departments", 
+       y = "\n", 
+       x = "\nYears Since Ph.D.\n",
+       caption = "Data Source: https://cran.r-project.org/web/packages/car/car.pdf") + 
+  scale_color_OkabeIto(name = "Gender") + 
+  scale_y_continuous(labels=dollar, limits = c(0, 250000))
+plot4b
+```
+
+> This is my variation of Plot 3, but, again, I don't like it as much because really only scholarly audiences know what the se ribbon represent. 
